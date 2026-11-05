@@ -1,0 +1,42 @@
+# Data Quality Assurance (DQA) Rules Specification
+version: "1.0"
+
+rules:
+  customers:
+    primary_key: "customer_id"
+    not_null:
+      - "customer_id"
+      - "customer_unique_id"
+      - "customer_zip_code_prefix"
+      - "customer_city"
+      - "customer_state"
+    string_length:
+      customer_state: 2
+      customer_zip_code_prefix: 5
+
+  orders:
+    primary_key: "order_id"
+    not_null:
+      - "order_id"
+      - "customer_id"
+      - "order_status"
+    valid_statuses:
+      - "delivered"
+      - "shipped"
+      - "canceled"
+      - "invoiced"
+      - "processing"
+      - "unavailable"
+
+  order_items:
+    primary_key:
+      - "order_id"
+      - "order_item_id"
+    not_null:
+      - "order_id"
+      - "order_item_id"
+      - "product_id"
+      - "seller_id"
+    positive_numeric:
+      - "price"
+      - "freight_value"

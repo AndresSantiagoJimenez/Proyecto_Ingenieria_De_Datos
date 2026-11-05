@@ -1,0 +1,20 @@
+# Application Configuration
+app:
+  name: "data-engineering-platform-olist"
+  version: "0.1.0"
+  environment: "development"
+
+storage:
+  base_dir: "./data"
+  raw_dir: "./data/raw"
+  sample_dir: "./data/sample"
+  bronze_dir: "./data/bronze"
+  silver_dir: "./data/silver"
+  gold_dir: "./data/gold"
+  quarantine_dir: "./data/quarantine"
+
+spark:
+  app_name: "OlistDeltaLakehouse"
+  master: "local[*]"
+  driver_memory: "2g"
+  executor_memory: "2g"

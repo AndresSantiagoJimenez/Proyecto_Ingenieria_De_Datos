@@ -1,0 +1,8 @@
+"order_id","payment_sequential","payment_type","payment_installments","payment_value"
+"e481f51cbdc54678b7cc49136f2d6af7",1,"credit_card",1,18.12
+"e481f51cbdc54678b7cc49136f2d6af7",2,"voucher",1,2.00
+"e481f51cbdc54678b7cc49136f2d6af7",3,"voucher",1,18.59
+"53cdb2488a1081770f01ab6e1840a574",1,"boleto",1,141.46
+"47770eb9100c2d0c44946d9cf07ec65d",1,"credit_card",3,179.12
+"949d5b44dbf5de918fe9c16f97b45f8a",1,"credit_card",1,72.20
+"ad03cbe4b61f88a6ac03405433a738f1",1,"credit_card",2,62.40
