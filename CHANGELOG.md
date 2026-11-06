@@ -77,3 +77,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
   - Actualización exhaustiva del Runbook operativo en [`docs/runbook.md`](docs/runbook.md) documentando la doble modalidad de operación: Modo CLI Local (sin Docker) y Modo Interfaces Gráficas Web para Apache Airflow (puerto 8080), SonarQube (puerto 9000), Jenkins (puerto 8082) y GitHub Actions.
   - Actualización completa del Diccionario de Datos en [`docs/data_dictionary.md`](docs/data_dictionary.md) para capas Bronze, Cuarentena, Silver y Gold (`dim_customers`, `fact_sales`, `dim_customer_rfm`, `dim_logistics`).
   - Actualización de [`docs/architecture.md`](docs/architecture.md) con diagramas Mermaid integrados del Lakehouse, DAG de Airflow y matriz tecnológica.
+- **Fase 9: Presentación Profesional en GitHub (Bilingüe)**:
+  - Creación y publicación del [`README.md`](README.md) en español y [`README_EN.md`](README_EN.md) en inglés con insignias (badges) oficiales, diagramas de arquitectura, tablas de evidencia de ejecución real (99.441 registros, 42 tests, 97.84% cobertura) y documentación operativa bilingüe.
+  - Documentación de la doble modalidad operativa: Modo CLI Local (rápido sin Docker) y Modo Interfaces Gráficas Web para Airflow (puerto 8080), SonarQube (puerto 9000), Jenkins (puerto 8082) y GitHub Actions.
+  - Guía detallada paso a paso para la conexión e integración de Jenkins con el repositorio remoto de GitHub (`Pipeline script from SCM` con `Jenkinsfile`).
+  - Instrucciones finales para vinculación y publicación del repositorio a GitHub con protección de datasets pesados vía `.gitignore`.
