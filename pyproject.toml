@@ -52,6 +52,7 @@ addopts = "-v --strict-markers --tb=short"
 
 [tool.coverage.run]
 source = ["src"]
+relative_files = true
 omit = [
     "*/__init__.py",
     "*/tests/*",
