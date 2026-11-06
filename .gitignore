@@ -87,6 +87,10 @@ webserver_config.py
 logs/
 airflow/logs/
 
+# Internal Project Plans
+PROJECT_PLAN.md
+project_plan_v2.md
+
 # IDEs and OS files
 .idea/
 .vscode/
