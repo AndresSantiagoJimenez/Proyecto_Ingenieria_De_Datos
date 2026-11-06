@@ -106,26 +106,40 @@ The platform supports **two comprehensive operational modes** to cater to develo
    pip install -e .
    ```
 
-2. **Execute Static Linter (Ruff):**
+2. **Obtain Olist Datasets (Kaggle) — Manual or Automated:**
+   *(Large raw data files in `data/raw/` are git-ignored by design. You have two options to fetch the full dataset):*
+   - **Option A (Automated via Kaggle API):**
+     Configure `KAGGLE_USERNAME` and `KAGGLE_KEY` in your `.env` file and run:
+     ```bash
+     python scripts/download_olist_data.py --mode auto
+     ```
+   - **Option B (Manual Direct Download):**
+     Download the ZIP from [Kaggle Brazilian E-Commerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) and extract the CSV files into `data/raw/`. Check the guide with:
+     ```bash
+     python scripts/download_olist_data.py --mode manual
+     ```
+   > 💡 **Resilience Note:** If you run the pipeline without downloading the full dataset, the engine automatically detects it and falls back gracefully to the version-controlled sample datasets in `data/sample/` (`olist_customers_sample.csv`, `olist_orders_sample.csv`, etc.), ensuring the pipeline never crashes.
+
+3. **Execute Static Linter (Ruff):**
    ```bash
    ruff check src/ tests/ scripts/ dags/
    ```
 
-3. **Run Full Test Suite with Coverage XML Report:**
+4. **Run Full Test Suite with Coverage XML Report:**
    ```bash
    pytest tests/ --cov=src --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
    ```
 
-4. **Audit Quality Gate Locally:**
+5. **Audit Quality Gate Locally:**
    ```bash
    python scripts/validate_quality_gate.py
    ```
 
-5. **Run Complete End-to-End Medallion Pipeline:**
+6. **Run Complete End-to-End Medallion Pipeline:**
    ```bash
    python scripts/run_pipeline.py --entity customers
    ```
-   *(Processes 99,441 real records, performs DQA checks, upserts into Silver with `MERGE INTO`, builds 4 Gold analytics tables, and logs execution metrics into `data/lakehouse/metrics/`)*.
+   *(Processes data, performs DQA checks, upserts into Silver with `MERGE INTO`, builds 4 Gold analytics tables, and logs execution metrics into `data/lakehouse/metrics/`)*.
 
 ---
 

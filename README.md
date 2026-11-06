@@ -102,26 +102,40 @@ La plataforma ofrece **dos modalidades completas** de uso para adaptarse tanto a
    pip install -e .
    ```
 
-2. **Ejecutar el linter estático (Ruff):**
+2. **Obtención de los Datos de Olist (Kaggle) — Manual o Automatizado:**
+   *(Los archivos pesados de `data/raw/` no se suben a Git por diseño. Tienes 2 opciones para tener los datos reales):*
+   - **Opción A (Automatizada por código con Kaggle API):**
+     Configura tu `KAGGLE_USERNAME` y `KAGGLE_KEY` en tu archivo `.env` y corre:
+     ```powershell
+     python scripts/download_olist_data.py --mode auto
+     ```
+   - **Opción B (Descarga Manual Directa):**
+     Descarga el ZIP desde [Kaggle Brazilian E-Commerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) y descomprime los CSV en la carpeta `data/raw/`. Puedes ver la guía con:
+     ```powershell
+     python scripts/download_olist_data.py --mode manual
+     ```
+   > 💡 **Nota de resiliencia:** Si ejecutas el pipeline sin descargar la base completa, el sistema detecta la ausencia y utiliza automáticamente los datasets de muestra versionados en `data/sample/` (`olist_customers_sample.csv`, `olist_orders_sample.csv`, etc.), por lo que el pipeline nunca fallará.
+
+3. **Ejecutar el linter estático (Ruff):**
    ```powershell
    ruff check src/ tests/ scripts/ dags/
    ```
 
-3. **Ejecutar la suite completa de pruebas con reporte de cobertura:**
+4. **Ejecutar la suite completa de pruebas con reporte de cobertura:**
    ```powershell
    pytest tests/ --cov=src --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
    ```
 
-4. **Validar el Quality Gate localmente:**
+5. **Validar el Quality Gate localmente:**
    ```powershell
    python scripts/validate_quality_gate.py
    ```
 
-5. **Ejecutar el pipeline Medallion End-to-End (Bronze ➔ Cuarentena ➔ Silver ➔ Gold):**
+6. **Ejecutar el pipeline Medallion End-to-End (Bronze ➔ Cuarentena ➔ Silver ➔ Gold):**
    ```powershell
    python scripts/run_pipeline.py --entity customers
    ```
-   *(Procesa los 99.441 registros reales, ejecuta DQA, hace el MERGE INTO en Silver y genera las 4 tablas analíticas en Gold persistiendo métricas en `data/lakehouse/metrics/`)*.
+   *(Procesa los datos, ejecuta DQA, realiza el `MERGE INTO` ACID en Silver y genera las 4 tablas analíticas en Gold persistiendo métricas en `data/lakehouse/metrics/`)*.
 
 ---
 
