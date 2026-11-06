@@ -1,4 +1,4 @@
-.PHONY: help install lint test up down logs clean spark-status sonar-up
+.PHONY: help install lint test quality-gate up down logs clean spark-status sonar-up
 
 SHELL := /bin/bash
 PYTHON := python
@@ -8,6 +8,7 @@ help:
 	@echo "  make install      - Install development dependencies in virtual environment"
 	@echo "  make lint         - Run ruff static code analysis"
 	@echo "  make test         - Run pytest test suite with coverage report"
+	@echo "  make quality-gate - Run Quality Gate validation (coverage + test results + Sonar config)"
 	@echo "  make up           - Start Airflow, Spark and Lakehouse core services with Docker Compose"
 	@echo "  make down         - Stop Docker Compose services"
 	@echo "  make logs         - Tail Docker Compose container logs"
@@ -19,10 +20,13 @@ install:
 	pip install -r requirements-dev.txt
 
 lint:
-	ruff check src/ tests/
+	ruff check src/ tests/ scripts/ dags/
 
 test:
-	pytest --cov=src --cov-report=xml:coverage.xml --cov-report=term
+	pytest tests/ --cov=src --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
+
+quality-gate: test
+	$(PYTHON) scripts/validate_quality_gate.py
 
 up:
 	docker compose up -d

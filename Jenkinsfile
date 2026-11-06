@@ -20,6 +20,7 @@ pipeline {
                     . ${PYTHON_VENV}/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements-dev.txt
+                    pip install -e .
                 '''
             }
         }
@@ -28,7 +29,7 @@ pipeline {
             steps {
                 sh '''
                     . ${PYTHON_VENV}/bin/activate
-                    ruff check src/ tests/
+                    ruff check src/ tests/ scripts/ dags/
                 '''
             }
         }
@@ -37,7 +38,16 @@ pipeline {
             steps {
                 sh '''
                     . ${PYTHON_VENV}/bin/activate
-                    pytest --cov=src --cov-report=xml:coverage.xml --cov-report=term
+                    pytest tests/ --cov=src --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
+                '''
+            }
+        }
+
+        stage('Validate Quality Gate Local') {
+            steps {
+                sh '''
+                    . ${PYTHON_VENV}/bin/activate
+                    python scripts/validate_quality_gate.py
                 '''
             }
         }
@@ -50,7 +60,7 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
+        stage('Quality Gate Approval') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
@@ -61,6 +71,8 @@ pipeline {
 
     post {
         always {
+            junit testResults: 'test-results.xml', allowEmptyResults: true
+            archiveArtifacts artifacts: 'coverage.xml, test-results.xml', allowEmptyArchive: true
             cleanWs deleteDirs: true, notFailBuild: true
         }
     }

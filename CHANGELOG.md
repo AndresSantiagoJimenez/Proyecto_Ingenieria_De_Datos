@@ -60,3 +60,12 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
   - Prueba de integración end-to-end en [`tests/integration/test_pipeline_integration.py`](tests/integration/test_pipeline_integration.py) usando `tmp_path` para aislamiento completo de directorios Lakehouse.
   - Ejecución real verificada del pipeline completo sobre 99.441 registros de Olist (exit code 0).
   - Suite total elevada a **31 pruebas automáticas** con **99% de cobertura** global (100% en módulos Bronze, Silver, DQA, Quarantine y Gold).
+- **Fase 7: Calidad de Código (SonarQube / SonarCloud) y CI (Jenkins / GitHub Actions)**:
+  - Generación formal de reportes de cobertura Cobertura XML (`coverage.xml`) y reportes de ejecución de pruebas JUnit (`test-results.xml`).
+  - Configuración estricta en [`pyproject.toml`](pyproject.toml) con umbral mínimo de cobertura de código obligatorio del 80% (`fail_under = 80`).
+  - Configuración avanzada de SonarQube / SonarCloud en [`sonar-project.properties`](sonar-project.properties) con exclusiones controladas de datos, reportes y directiva `sonar.qualitygate.wait=true`.
+  - Creación de script de auditoría local de Quality Gate en [`scripts/validate_quality_gate.py`](scripts/validate_quality_gate.py) para validación automática previa a commits/push.
+  - Implementación de pruebas unitarias para el validador de Quality Gate en [`tests/unit/test_quality_gate.py`](tests/unit/test_quality_gate.py), elevando la suite completa a **39 pruebas automáticas**.
+  - Flujo de GitHub Actions optimizado en [`.github/workflows/ci.yml`](.github/workflows/ci.yml) incluyendo setup de Java 17, linter Ruff, ejecución de tests con reportes XML, validación de Quality Gate, subida de artefactos y escaneo SonarCloud.
+  - Pipeline de Jenkins en [`Jenkinsfile`](Jenkinsfile) con recolección de métricas JUnit, archivado de artefactos y etapa `Quality Gate Approval` con `waitForQualityGate`.
+  - Targets añadidos en [`Makefile`](Makefile) (`make quality-gate`, `make test`, `make lint`) para reproducibilidad local del pipeline de calidad.

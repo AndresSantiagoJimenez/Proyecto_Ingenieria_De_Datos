@@ -49,6 +49,7 @@ venv.bak/
 .coverage.*
 htmlcov/
 coverage.xml
+test-results.xml
 *.cover
 *.py,cover
 .hypothesis/
