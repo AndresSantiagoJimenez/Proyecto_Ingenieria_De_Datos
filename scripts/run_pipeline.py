@@ -1,7 +1,6 @@
 """End-to-End Medallion Lakehouse Pipeline Runner (Bronze -> DQA/Quarantine -> Silver -> Gold)."""
 
 import argparse
-import logging
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -13,16 +12,14 @@ sys.path.insert(0, str(ROOT_DIR))
 from src.data_platform.config import settings  # noqa: E402
 from src.data_platform.ingestion.bronze import BronzeIngestion  # noqa: E402
 from src.data_platform.modeling.gold import GoldModeler  # noqa: E402
+from src.data_platform.observability.logging import get_structured_logger  # noqa: E402
+from src.data_platform.observability.metrics import BatchMetricsTracker  # noqa: E402
 from src.data_platform.quality.dqa import DataQualityAssurance  # noqa: E402
 from src.data_platform.quality.quarantine import QuarantineManager  # noqa: E402
 from src.data_platform.storage.session import get_spark_session  # noqa: E402
 from src.data_platform.transformations.silver import SilverTransformer  # noqa: E402
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
-logger = logging.getLogger("medallion_pipeline")
+logger = get_structured_logger("medallion_pipeline")
 
 
 @dataclass
@@ -48,9 +45,13 @@ def run_pipeline(
     silver_dir: Path | str | None = None,
     gold_dir: Path | str | None = None,
     quarantine_dir: Path | str | None = None,
+    metrics_dir: Path | str | None = None,
 ) -> PipelineExecutionSummary:
     """Execute complete Medallion Lakehouse pipeline for a given entity."""
     started_at = datetime.now(timezone.utc)
+    batch_id = f"batch_{entity}_{started_at.strftime('%Y%m%d_%H%M%S')}"
+    metrics_tracker = BatchMetricsTracker(batch_id=batch_id, output_dir=metrics_dir)
+
     spark_provided = spark is not None
     active_spark = spark or get_spark_session(app_name=f"MedallionPipeline_{entity}")
 
@@ -61,13 +62,14 @@ def run_pipeline(
 
     try:
         logger.info("=" * 70)
-        logger.info("STARTING MEDALLION LAKEHOUSE PIPELINE: %s", entity.upper())
+        logger.info("STARTING MEDALLION LAKEHOUSE PIPELINE: %s [batch=%s]", entity.upper(), batch_id)
         logger.info("=" * 70)
 
         # ----------------------------------------------------------------------
         # 1. BRONZE LAYER INGESTION
         # ----------------------------------------------------------------------
         logger.info("[Step 1/4] Ingesting Raw data into Bronze Delta Lake...")
+        metrics_tracker.start_stage("bronze_ingestion")
         bronze_engine = BronzeIngestion(active_spark)
         if use_sample:
             source_file = settings.sample_path / f"olist_{entity}_sample.csv"
@@ -83,6 +85,7 @@ def run_pipeline(
             output_dir=b_dir,
             write_mode="overwrite",
         )
+        metrics_tracker.end_stage("bronze_ingestion", records_out=bronze_result.records_count)
         logger.info(
             "Bronze Ingestion Done: %d records ingested into Delta Bronze [batch=%s]",
             bronze_result.records_count,
@@ -93,11 +96,17 @@ def run_pipeline(
         # 2. DATA QUALITY ASSURANCE & QUARANTINE
         # ----------------------------------------------------------------------
         logger.info("[Step 2/4] Evaluating Data Quality Rules & Quarantine Isolation...")
+        metrics_tracker.start_stage("data_quality_assurance", records_in=bronze_result.records_count)
         bronze_df = bronze_engine.read_bronze(entity=entity, base_dir=b_dir)
         dqa_engine = DataQualityAssurance(active_spark)
         quarantine_mgr = QuarantineManager(active_spark)
 
         valid_df, quarantine_df, dqa_result = dqa_engine.validate(bronze_df, entity=entity)
+        metrics_tracker.end_stage(
+            "data_quality_assurance",
+            records_out=dqa_result.valid_count,
+            metadata={"quarantined_records": dqa_result.quarantined_count},
+        )
         logger.info(
             "DQA Check: Total=%d | Valid=%d | Quarantined=%d",
             dqa_result.total_evaluated,
@@ -113,6 +122,7 @@ def run_pipeline(
         # 3. SILVER LAYER TRANSFORMATION & MERGE INTO
         # ----------------------------------------------------------------------
         logger.info("[Step 3/4] Transforming and Upserting into Silver Delta Lake...")
+        metrics_tracker.start_stage("silver_transformation", records_in=dqa_result.valid_count)
         silver_engine = SilverTransformer(active_spark)
         if entity == "customers":
             cleansed_df = silver_engine.transform_customers(valid_df)
@@ -127,6 +137,7 @@ def run_pipeline(
             primary_keys=primary_keys,
             output_dir=s_dir,
         )
+        metrics_tracker.end_stage("silver_transformation", records_out=silver_result.records_count)
         logger.info(
             "Silver Upsert Done: Total records in Silver Delta: %d",
             silver_result.records_count,
@@ -136,6 +147,7 @@ def run_pipeline(
         # 4. GOLD LAYER DIMENSIONAL & ANALYTICAL MODELING
         # ----------------------------------------------------------------------
         logger.info("[Step 4/4] Building Gold Star Schema & Analytics...")
+        metrics_tracker.start_stage("gold_modeling", records_in=silver_result.records_count)
         gold_engine = GoldModeler(active_spark)
         silver_customers = silver_engine.read_silver("customers", base_dir=s_dir)
 
@@ -172,6 +184,11 @@ def run_pipeline(
             )
             gold_fact_count = res_sales.records_count
 
+        metrics_tracker.end_stage(
+            "gold_modeling",
+            records_out=res_dim_cust.records_count + gold_fact_count,
+        )
+
         completed_at = datetime.now(timezone.utc)
         summary = PipelineExecutionSummary(
             entity=entity,
@@ -184,6 +201,17 @@ def run_pipeline(
             gold_fact_count=gold_fact_count,
             status="SUCCESS",
         )
+
+        # Persist structured execution metric
+        batch_metric = metrics_tracker.build_summary(
+            status="SUCCESS",
+            total_bronze=bronze_result.records_count,
+            total_quarantined=dqa_result.quarantined_count,
+            total_silver=silver_result.records_count,
+            total_gold=res_dim_cust.records_count + gold_fact_count,
+        )
+        saved_metric_path = metrics_tracker.persist(batch_metric)
+        logger.info("Pipeline Metrics saved to: %s", saved_metric_path)
 
         logger.info("=" * 70)
         logger.info("PIPELINE COMPLETED SUCCESSFULLY: %s", summary)

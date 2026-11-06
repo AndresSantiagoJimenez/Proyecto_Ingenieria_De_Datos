@@ -69,3 +69,11 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
   - Flujo de GitHub Actions optimizado en [`.github/workflows/ci.yml`](.github/workflows/ci.yml) incluyendo setup de Java 17, linter Ruff, ejecución de tests con reportes XML, validación de Quality Gate, subida de artefactos y escaneo SonarCloud.
   - Pipeline de Jenkins en [`Jenkinsfile`](Jenkinsfile) con recolección de métricas JUnit, archivado de artefactos y etapa `Quality Gate Approval` con `waitForQualityGate`.
   - Targets añadidos en [`Makefile`](Makefile) (`make quality-gate`, `make test`, `make lint`) para reproducibilidad local del pipeline de calidad.
+- **Fase 8: Observabilidad y Documentación**:
+  - Creación del subsistema de telemetría y métricas en [`src/data_platform/observability/`](src/data_platform/observability/) con `BatchMetricsTracker` para auditar duración de etapas, volúmenes de ingesta, registros limpios y tasas de rechazo en cuarentena, persistidos en `data/lakehouse/metrics/pipeline_metrics.jsonl`.
+  - Implementación de logging estructurado con `JSONFormatter` y fábrica `get_structured_logger` en [`src/data_platform/observability/logging.py`](src/data_platform/observability/logging.py).
+  - Integración de métricas automáticas en el runner end-to-end [`scripts/run_pipeline.py`](scripts/run_pipeline.py).
+  - Pruebas unitarias para el subsistema de observabilidad en [`tests/unit/test_observability.py`](tests/unit/test_observability.py), alcanzando 42 pruebas automatizadas y 97.84% de cobertura.
+  - Actualización exhaustiva del Runbook operativo en [`docs/runbook.md`](docs/runbook.md) documentando la doble modalidad de operación: Modo CLI Local (sin Docker) y Modo Interfaces Gráficas Web para Apache Airflow (puerto 8080), SonarQube (puerto 9000), Jenkins (puerto 8082) y GitHub Actions.
+  - Actualización completa del Diccionario de Datos en [`docs/data_dictionary.md`](docs/data_dictionary.md) para capas Bronze, Cuarentena, Silver y Gold (`dim_customers`, `fact_sales`, `dim_customer_rfm`, `dim_logistics`).
+  - Actualización de [`docs/architecture.md`](docs/architecture.md) con diagramas Mermaid integrados del Lakehouse, DAG de Airflow y matriz tecnológica.
